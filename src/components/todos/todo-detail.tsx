@@ -3,6 +3,7 @@ import {
   Sheet,
   SheetContent,
   SheetHeader,
+  SheetFooter,
   SheetTitle,
 } from "@/components/ui/sheet";
 import { Input } from "@/components/ui/input";
@@ -17,6 +18,9 @@ import {
 } from "@/components/ui/select";
 import { Separator } from "@/components/ui/separator";
 import { useUpdateTodo, useDeleteTodo } from "@/hooks/use-todos";
+import { DueDatePicker } from "./due-date-picker";
+import { SubtaskList } from "@/components/subtasks/subtask-list";
+import { TagPicker } from "@/components/tags/tag-picker";
 import { PRIORITY } from "@/lib/constants";
 import { Loader2, Trash2 } from "lucide-react";
 import type { Todo } from "@/types";
@@ -31,6 +35,7 @@ export function TodoDetail({ todo, open, onOpenChange }: TodoDetailProps) {
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
   const [priority, setPriority] = useState<string>("medium");
+  const [dueDate, setDueDate] = useState<string | null>(null);
   const updateTodo = useUpdateTodo();
   const deleteTodo = useDeleteTodo();
 
@@ -39,6 +44,7 @@ export function TodoDetail({ todo, open, onOpenChange }: TodoDetailProps) {
       setTitle(todo.title);
       setDescription(todo.description ?? "");
       setPriority(todo.priority);
+      setDueDate(todo.due_date);
     }
   }, [todo]);
 
@@ -52,6 +58,7 @@ export function TodoDetail({ todo, open, onOpenChange }: TodoDetailProps) {
       title: title.trim(),
       description: description.trim() || null,
       priority: priority as "low" | "medium" | "high",
+      due_date: dueDate,
     });
     onOpenChange(false);
   };
@@ -63,13 +70,14 @@ export function TodoDetail({ todo, open, onOpenChange }: TodoDetailProps) {
 
   return (
     <Sheet open={open} onOpenChange={onOpenChange}>
-      <SheetContent className="flex flex-col">
-        <SheetHeader>
+      <SheetContent className="flex flex-col p-0 overflow-hidden">
+        <SheetHeader className="px-6 pt-6 pb-0">
           <SheetTitle>Edit Todo</SheetTitle>
         </SheetHeader>
 
-        <div className="flex-1 space-y-4 py-4">
-          <div className="space-y-2">
+        <div className="flex-1 overflow-y-auto px-6 py-4 space-y-5">
+          {/* Title */}
+          <div className="space-y-1.5">
             <label className="text-sm font-medium">Title</label>
             <Input
               value={title}
@@ -78,36 +86,57 @@ export function TodoDetail({ todo, open, onOpenChange }: TodoDetailProps) {
             />
           </div>
 
-          <div className="space-y-2">
+          {/* Description */}
+          <div className="space-y-1.5">
             <label className="text-sm font-medium">Description</label>
             <Textarea
               value={description}
               onChange={(e) => setDescription(e.target.value)}
               placeholder="Add a description..."
-              className="min-h-20"
+              className="min-h-20 resize-none"
             />
           </div>
 
-          <div className="space-y-2">
-            <label className="text-sm font-medium">Priority</label>
-            <Select value={priority} onValueChange={setPriority}>
-              <SelectTrigger>
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                {Object.entries(PRIORITY).map(([value, { label, color }]) => (
-                  <SelectItem key={value} value={value}>
-                    <span className={color}>{label}</span>
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+          {/* Priority & Due Date */}
+          <div className="grid grid-cols-2 gap-3">
+            <div className="space-y-1.5">
+              <label className="text-sm font-medium">Priority</label>
+              <Select value={priority} onValueChange={setPriority}>
+                <SelectTrigger>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  {Object.entries(PRIORITY).map(([value, { label, color }]) => (
+                    <SelectItem key={value} value={value}>
+                      <span className={color}>{label}</span>
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+
+            <div className="space-y-1.5">
+              <label className="text-sm font-medium">Due Date</label>
+              <DueDatePicker value={dueDate} onChange={setDueDate} />
+            </div>
+          </div>
+
+          {/* Tags */}
+          <div className="space-y-1.5">
+            <label className="text-sm font-medium">Tags</label>
+            <TagPicker todoId={todo.id} />
+          </div>
+
+          <Separator />
+
+          {/* Subtasks */}
+          <div className="space-y-1.5">
+            <label className="text-sm font-medium">Subtasks</label>
+            <SubtaskList todoId={todo.id} />
           </div>
         </div>
 
-        <Separator />
-
-        <div className="flex items-center justify-between pt-4">
+        <SheetFooter className="flex-row items-center justify-between border-t px-6 py-4">
           <Button
             variant="destructive"
             size="sm"
@@ -130,7 +159,7 @@ export function TodoDetail({ todo, open, onOpenChange }: TodoDetailProps) {
               Save
             </Button>
           </div>
-        </div>
+        </SheetFooter>
       </SheetContent>
     </Sheet>
   );

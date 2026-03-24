@@ -16,4 +16,5 @@ export type {
   ListShareInsert,
   ShareInvite,
   TodoWithRelations,
+  TodoSearchResult,
 } from "./todo";

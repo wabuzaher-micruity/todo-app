@@ -42,6 +42,7 @@ export function TodoItem({
       {dragListeners && (
         <button
           type="button"
+          aria-label="Reorder"
           className="cursor-grab touch-none text-muted-foreground opacity-0 group-hover:opacity-100 transition-opacity"
           {...dragListeners}
           {...dragAttributes}

@@ -14,7 +14,6 @@ const TAG_COLORS = [
 
 interface TagPickerProps {
   todoId: string;
-  listId: string;
 }
 
 export function TagPicker({ todoId }: TagPickerProps) {

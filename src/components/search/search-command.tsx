@@ -11,6 +11,7 @@ import {
 import { useSearch } from "@/hooks/use-search";
 import { CheckSquare, Search } from "lucide-react";
 import { cn } from "@/lib/utils";
+import type { TodoSearchResult } from "@/types";
 
 export function SearchCommand() {
   const [open, setOpen] = useState(false);
@@ -36,16 +37,14 @@ export function SearchCommand() {
   };
 
   // Group results by list
-  const grouped = new Map<string, { listName: string; todos: typeof results }>();
+  const grouped = new Map<string, { listName: string; todos: TodoSearchResult[] }>();
   for (const result of results ?? []) {
     const listId = result.list_id;
-    const listName = (result as Record<string, unknown>).todo_lists
-      ? ((result as Record<string, unknown>).todo_lists as { name: string }).name
-      : "Unknown";
+    const listName = result.todo_lists.name;
     if (!grouped.has(listId)) {
       grouped.set(listId, { listName, todos: [] });
     }
-    grouped.get(listId)!.todos!.push(result);
+    grouped.get(listId)!.todos.push(result);
   }
 
   return (
@@ -74,7 +73,7 @@ export function SearchCommand() {
           </CommandEmpty>
           {Array.from(grouped.entries()).map(([listId, { listName, todos }]) => (
             <CommandGroup key={listId} heading={listName}>
-              {todos?.map((todo) => (
+              {todos.map((todo) => (
                 <CommandItem
                   key={todo.id}
                   onSelect={() => handleSelect(listId)}

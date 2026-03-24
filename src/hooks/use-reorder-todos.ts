@@ -19,14 +19,14 @@ export function useReorderTodos() {
         position: index * 1000,
       }));
 
-      // Batch update positions
-      for (const { id, position } of updates) {
-        const { error } = await supabase
-          .from("todos")
-          .update({ position })
-          .eq("id", id);
-        if (error) throw error;
-      }
+      // Update all positions concurrently
+      const results = await Promise.all(
+        updates.map(({ id, position }) =>
+          supabase.from("todos").update({ position }).eq("id", id)
+        )
+      );
+      const failed = results.find((r) => r.error);
+      if (failed?.error) throw failed.error;
       return { listId };
     },
     onMutate: async ({ listId, reordered }) => {

@@ -1,5 +1,6 @@
 import { useState, useMemo } from "react";
 import { useParams, Navigate } from "react-router";
+import { useQuery } from "@tanstack/react-query";
 import { useTodos } from "@/hooks/use-todos";
 import { useTodoLists } from "@/hooks/use-todo-lists";
 import { useFilters, applyFilters, applySorting } from "@/hooks/use-filters";
@@ -9,9 +10,8 @@ import { TodoDetail } from "@/components/todos/todo-detail";
 import { TodoFilters } from "@/components/todos/todo-filters";
 import { ListActions } from "@/components/lists/list-actions";
 import { Skeleton } from "@/components/ui/skeleton";
-import type { Todo, Tag } from "@/types";
-import { useQueries } from "@tanstack/react-query";
 import { supabase } from "@/lib/supabase";
+import type { Todo, Tag, Subtask } from "@/types";
 
 export default function ListPage() {
   const { listId } = useParams<{ listId: string }>();
@@ -22,51 +22,50 @@ export default function ListPage() {
 
   const list = lists?.find((l) => l.id === listId);
 
-  // Batch fetch tags and subtask counts for all todos
-  const todoIds = todos?.map((t) => t.id) ?? [];
+  const todoIds = useMemo(() => todos?.map((t) => t.id) ?? [], [todos]);
 
-  // Reuse the same query key + shape as useTodoTags so caches are shared
-  const tagQueries = useQueries({
-    queries: todoIds.map((todoId) => ({
-      queryKey: ["todo-tags", todoId],
-      queryFn: async () => {
-        const { data, error } = await supabase
-          .from("todo_tags")
-          .select("tag_id, tags(*)")
-          .eq("todo_id", todoId);
-        if (error) throw error;
-        return data.map((r) => r.tags!) as Tag[];
-      },
-      enabled: !!todoId,
-    })),
+  // Batch fetch all tags for all todos in this list (1 query instead of N)
+  const { data: allTodoTags } = useQuery({
+    queryKey: ["todo-tags-batch", listId, todoIds],
+    queryFn: async () => {
+      if (todoIds.length === 0) return [];
+      const { data, error } = await supabase
+        .from("todo_tags")
+        .select("todo_id, tag_id, tags(*)")
+        .in("todo_id", todoIds);
+      if (error) throw error;
+      return data as (typeof data[number] & { tags: Tag })[];
+    },
+    enabled: todoIds.length > 0,
+    staleTime: 30_000,
   });
 
-  // Reuse the same query key + shape as useSubtasks
-  const subtaskQueries = useQueries({
-    queries: todoIds.map((todoId) => ({
-      queryKey: ["subtasks", todoId],
-      queryFn: async () => {
-        const { data, error } = await supabase
-          .from("subtasks")
-          .select("*")
-          .eq("todo_id", todoId)
-          .order("position")
-          .order("created_at");
-        if (error) throw error;
-        return data;
-      },
-      enabled: !!todoId,
-    })),
+  // Batch fetch all subtasks for all todos in this list (1 query instead of N)
+  const { data: allSubtasks } = useQuery({
+    queryKey: ["subtasks-batch", listId, todoIds],
+    queryFn: async () => {
+      if (todoIds.length === 0) return [];
+      const { data, error } = await supabase
+        .from("subtasks")
+        .select("*")
+        .in("todo_id", todoIds)
+        .order("position")
+        .order("created_at");
+      if (error) throw error;
+      return data as Subtask[];
+    },
+    enabled: todoIds.length > 0,
+    staleTime: 30_000,
   });
 
   const todoTags = useMemo(() => {
     const map: Record<string, Tag[]> = {};
-    todoIds.forEach((todoId, i) => {
-      const tags = tagQueries[i]?.data;
-      if (tags) map[todoId] = tags;
-    });
+    for (const row of allTodoTags ?? []) {
+      if (!map[row.todo_id]) map[row.todo_id] = [];
+      if (row.tags) map[row.todo_id].push(row.tags);
+    }
     return map;
-  }, [tagQueries, todoIds]);
+  }, [allTodoTags]);
 
   const todoTagIds = useMemo(() => {
     const map: Record<string, string[]> = {};
@@ -78,17 +77,13 @@ export default function ListPage() {
 
   const subtaskCounts = useMemo(() => {
     const map: Record<string, { done: number; total: number }> = {};
-    todoIds.forEach((todoId, i) => {
-      const subtasks = subtaskQueries[i]?.data;
-      if (subtasks) {
-        map[todoId] = {
-          total: subtasks.length,
-          done: subtasks.filter((s) => s.completed).length,
-        };
-      }
-    });
+    for (const subtask of allSubtasks ?? []) {
+      if (!map[subtask.todo_id]) map[subtask.todo_id] = { done: 0, total: 0 };
+      map[subtask.todo_id].total++;
+      if (subtask.completed) map[subtask.todo_id].done++;
+    }
     return map;
-  }, [subtaskQueries, todoIds]);
+  }, [allSubtasks]);
 
   // Apply client-side filters and sorting
   const filteredTodos = useMemo(() => {

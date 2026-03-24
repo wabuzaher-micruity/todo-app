@@ -124,7 +124,7 @@ export function TodoDetail({ todo, open, onOpenChange }: TodoDetailProps) {
           {/* Tags */}
           <div className="space-y-1.5">
             <label className="text-sm font-medium">Tags</label>
-            <TagPicker todoId={todo.id} listId={todo.list_id} />
+            <TagPicker todoId={todo.id} />
           </div>
 
           <Separator />

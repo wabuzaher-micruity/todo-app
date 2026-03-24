@@ -28,3 +28,7 @@ export type TodoWithRelations = Todo & {
   subtasks: Subtask[];
   todo_tags: (TodoTag & { tags: Tag })[];
 };
+
+export type TodoSearchResult = Todo & {
+  todo_lists: { name: string };
+};

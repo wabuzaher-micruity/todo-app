@@ -2,22 +2,32 @@
 -- 002: Row-Level Security policies
 -- ============================================
 
--- Helper: does user have any access to a list?
-CREATE OR REPLACE FUNCTION has_list_access(p_list_id UUID, p_user_id UUID)
+-- Helper: check if user has a share on a list (bypasses RLS on list_shares)
+CREATE OR REPLACE FUNCTION is_shared_with_user(p_list_id UUID, p_user_id UUID)
+RETURNS BOOLEAN AS $$
+  SELECT EXISTS (
+    SELECT 1 FROM list_shares WHERE list_id = p_list_id AND shared_with = p_user_id
+  );
+$$ LANGUAGE sql SECURITY DEFINER STABLE;
+
+-- Helper: check if user owns a list (bypasses RLS on todo_lists)
+CREATE OR REPLACE FUNCTION is_list_owner(p_list_id UUID, p_user_id UUID)
 RETURNS BOOLEAN AS $$
   SELECT EXISTS (
     SELECT 1 FROM todo_lists WHERE id = p_list_id AND owner_id = p_user_id
-  ) OR EXISTS (
-    SELECT 1 FROM list_shares WHERE list_id = p_list_id AND shared_with = p_user_id
   );
+$$ LANGUAGE sql SECURITY DEFINER STABLE;
+
+-- Helper: does user have any access to a list?
+CREATE OR REPLACE FUNCTION has_list_access(p_list_id UUID, p_user_id UUID)
+RETURNS BOOLEAN AS $$
+  SELECT is_list_owner(p_list_id, p_user_id) OR is_shared_with_user(p_list_id, p_user_id);
 $$ LANGUAGE sql SECURITY DEFINER STABLE;
 
 -- Helper: does user have editor (or owner) access?
 CREATE OR REPLACE FUNCTION has_editor_access(p_list_id UUID, p_user_id UUID)
 RETURNS BOOLEAN AS $$
-  SELECT EXISTS (
-    SELECT 1 FROM todo_lists WHERE id = p_list_id AND owner_id = p_user_id
-  ) OR EXISTS (
+  SELECT is_list_owner(p_list_id, p_user_id) OR EXISTS (
     SELECT 1 FROM list_shares WHERE list_id = p_list_id AND shared_with = p_user_id AND role = 'editor'
   );
 $$ LANGUAGE sql SECURITY DEFINER STABLE;
@@ -27,9 +37,10 @@ $$ LANGUAGE sql SECURITY DEFINER STABLE;
 -- =====================
 ALTER TABLE todo_lists ENABLE ROW LEVEL SECURITY;
 
+-- Uses SECURITY DEFINER function to avoid recursion with list_shares policies
 CREATE POLICY "select_own_or_shared" ON todo_lists FOR SELECT USING (
   owner_id = auth.uid() OR
-  EXISTS (SELECT 1 FROM list_shares WHERE list_id = id AND shared_with = auth.uid())
+  is_shared_with_user(id, auth.uid())
 );
 CREATE POLICY "insert_own" ON todo_lists FOR INSERT WITH CHECK (owner_id = auth.uid());
 CREATE POLICY "update_own" ON todo_lists FOR UPDATE USING (owner_id = auth.uid());
@@ -98,19 +109,20 @@ CREATE POLICY "delete_editor" ON todo_tags FOR DELETE USING (
 -- =====================
 ALTER TABLE list_shares ENABLE ROW LEVEL SECURITY;
 
+-- Uses SECURITY DEFINER function to avoid recursion with todo_lists policies
 CREATE POLICY "select_own_shares" ON list_shares FOR SELECT USING (
   shared_with = auth.uid() OR
-  EXISTS (SELECT 1 FROM todo_lists WHERE id = list_shares.list_id AND owner_id = auth.uid())
+  is_list_owner(list_id, auth.uid())
 );
 CREATE POLICY "manage_as_owner" ON list_shares FOR INSERT WITH CHECK (
-  EXISTS (SELECT 1 FROM todo_lists WHERE id = list_shares.list_id AND owner_id = auth.uid())
+  is_list_owner(list_id, auth.uid())
 );
 CREATE POLICY "update_as_owner" ON list_shares FOR UPDATE USING (
-  EXISTS (SELECT 1 FROM todo_lists WHERE id = list_shares.list_id AND owner_id = auth.uid())
+  is_list_owner(list_id, auth.uid())
 );
 CREATE POLICY "delete_as_owner_or_self" ON list_shares FOR DELETE USING (
   shared_with = auth.uid() OR
-  EXISTS (SELECT 1 FROM todo_lists WHERE id = list_shares.list_id AND owner_id = auth.uid())
+  is_list_owner(list_id, auth.uid())
 );
 
 -- =====================
@@ -119,11 +131,11 @@ CREATE POLICY "delete_as_owner_or_self" ON list_shares FOR DELETE USING (
 ALTER TABLE share_invites ENABLE ROW LEVEL SECURITY;
 
 CREATE POLICY "select_own_invites" ON share_invites FOR SELECT USING (
-  EXISTS (SELECT 1 FROM todo_lists WHERE id = share_invites.list_id AND owner_id = auth.uid())
+  is_list_owner(list_id, auth.uid())
 );
 CREATE POLICY "create_as_owner" ON share_invites FOR INSERT WITH CHECK (
-  EXISTS (SELECT 1 FROM todo_lists WHERE id = share_invites.list_id AND owner_id = auth.uid())
+  is_list_owner(list_id, auth.uid())
 );
 CREATE POLICY "delete_as_owner" ON share_invites FOR DELETE USING (
-  EXISTS (SELECT 1 FROM todo_lists WHERE id = share_invites.list_id AND owner_id = auth.uid())
+  is_list_owner(list_id, auth.uid())
 );

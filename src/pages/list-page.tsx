@@ -164,6 +164,7 @@ export default function ListPage() {
               <Button
                 variant="ghost"
                 size="icon-xs"
+                aria-label="Members"
                 onClick={() => setShowMembers(true)}
               >
                 <Users className="size-4" />

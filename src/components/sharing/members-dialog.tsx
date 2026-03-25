@@ -14,9 +14,9 @@ import {
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
+import { Skeleton } from "@/components/ui/skeleton";
 import {
   useListMembers,
-  useListShares,
   useUpdateShareRole,
   useRemoveCollaborator,
 } from "@/hooks/use-sharing";
@@ -32,16 +32,10 @@ interface MembersDialogProps {
 
 export function MembersDialog({ list, open, onOpenChange }: MembersDialogProps) {
   const { user } = useAuth();
-  const { data: members } = useListMembers(list.id);
-  const { data: shares } = useListShares(list.id);
+  const { data: members, isLoading } = useListMembers(list.id);
   const updateRole = useUpdateShareRole();
   const removeCollaborator = useRemoveCollaborator();
   const isOwner = user?.id === list.owner_id;
-
-  // Build a map from user_id → share.id for remove/update operations
-  const shareByUserId = new Map(
-    shares?.map((s) => [s.shared_with, s]) ?? []
-  );
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -51,9 +45,20 @@ export function MembersDialog({ list, open, onOpenChange }: MembersDialogProps) 
         </DialogHeader>
 
         <div className="space-y-3">
-          {members?.map((member) => {
+          {isLoading && (
+            <>
+              {Array.from({ length: 2 }).map((_, i) => (
+                <div key={i} className="flex items-center gap-2">
+                  <Skeleton className="size-8 rounded-full" />
+                  <Skeleton className="h-4 flex-1" />
+                  <Skeleton className="h-6 w-16" />
+                </div>
+              ))}
+            </>
+          )}
+
+          {!isLoading && members?.map((member) => {
             const initial = (member.email?.[0] ?? "?").toUpperCase();
-            const share = shareByUserId.get(member.user_id);
 
             return (
               <div key={member.user_id} className="flex items-center gap-2">
@@ -68,12 +73,12 @@ export function MembersDialog({ list, open, onOpenChange }: MembersDialogProps) 
                   <Badge variant="secondary" className="text-xs">
                     Owner
                   </Badge>
-                ) : isOwner && share ? (
+                ) : isOwner && member.share_id ? (
                   <>
                     <Select
                       value={member.role}
                       onValueChange={(role: "viewer" | "editor") =>
-                        updateRole.mutate({ id: share.id, role, listId: list.id })
+                        updateRole.mutate({ id: member.share_id!, role, listId: list.id })
                       }
                     >
                       <SelectTrigger className="w-24 h-8 text-xs">
@@ -88,7 +93,7 @@ export function MembersDialog({ list, open, onOpenChange }: MembersDialogProps) 
                       variant="ghost"
                       size="icon-xs"
                       onClick={() =>
-                        removeCollaborator.mutate({ id: share.id, listId: list.id })
+                        removeCollaborator.mutate({ id: member.share_id!, listId: list.id })
                       }
                     >
                       <X className="size-3.5" />
@@ -103,7 +108,7 @@ export function MembersDialog({ list, open, onOpenChange }: MembersDialogProps) 
             );
           })}
 
-          {(!members || members.length === 0) && (
+          {!isLoading && (!members || members.length === 0) && (
             <p className="text-sm text-muted-foreground py-2">
               No members found.
             </p>

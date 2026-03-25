@@ -82,6 +82,7 @@ export interface ListMember {
   user_id: string;
   email: string;
   role: "owner" | "editor" | "viewer";
+  share_id: string | null;
 }
 
 export function useListMembers(listId: string) {
@@ -91,11 +92,7 @@ export function useListMembers(listId: string) {
       const { data, error } = await supabase.rpc("get_list_members", {
         p_list_id: listId,
       });
-      if (error) {
-        console.error("get_list_members error:", error.message, error.code, error.details, error.hint);
-        throw error;
-      }
-      console.log("get_list_members data:", JSON.stringify(data));
+      if (error) throw error;
       return data as ListMember[];
     },
     enabled: !!listId,

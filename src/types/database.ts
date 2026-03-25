@@ -204,6 +204,7 @@ export type Database = {
           user_id: string;
           email: string;
           role: string;
+          share_id: string | null;
         }[];
       };
     };

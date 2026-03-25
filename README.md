@@ -12,6 +12,8 @@ A collaborative todo application with rich features and real-time list sharing b
 - **Filters** — Filter by priority, due date, tags, and completion status
 - **Real-time Collaboration** — Share lists with other users via invite links
 - **Role-based Access** — Viewer and editor roles with row-level security
+- **Member Management** — See who has access (with emails), change roles, revoke access
+- **Live Presence** — See which collaborators are currently viewing a list
 - **Dark Mode** — Theme toggle with system preference support
 
 ## Tech Stack
@@ -87,6 +89,7 @@ src/
 │   ├── search/        # Command palette search
 │   ├── subtasks/      # Subtask list and items
 │   ├── tags/          # Tag picker and badges
+│   ├── sharing/       # Share dialog, members dialog, collaborator list
 │   ├── todos/         # Todo items, filters, detail panel, drag-and-drop
 │   └── ui/            # shadcn/ui primitives
 ├── hooks/             # Data fetching hooks (TanStack Query + Supabase)

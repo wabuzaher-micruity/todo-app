@@ -31,6 +31,7 @@ A collaborative todo application with rich features (priority, due dates, tags, 
 - **Real-time:** Supabase Realtime events → invalidate TanStack Query cache
 - **Auth:** Supabase Auth (email/password + OAuth) via AuthProvider context
 - **Permissions:** Row-level security in Postgres; `has_list_access()` / `has_editor_access()` helper functions
+- **Presence:** Supabase Realtime Presence for active collaborator tracking
 - **Path alias:** `@/` → `src/` (configured in tsconfig + vite.config.ts)
 
 ## Key Directories
@@ -68,3 +69,5 @@ A collaborative todo application with rich features (priority, due dates, tags, 
 - Full-text search via generated `tsvector` column on `todos`
 - RLS enabled on all tables
 - `accept_invite()` SECURITY DEFINER function for share link acceptance
+- `get_list_collaborators()` SECURITY DEFINER function — joins `list_shares` with `auth.users` for email resolution
+- `get_list_members()` SECURITY DEFINER function — returns owner + collaborators with emails and `share_id`

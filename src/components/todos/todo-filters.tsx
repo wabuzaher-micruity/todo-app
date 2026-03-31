@@ -75,6 +75,7 @@ export function TodoFilters() {
         </SelectTrigger>
         <SelectContent>
           <SelectItem value="position">Manual order</SelectItem>
+          <SelectItem value="status">Active first</SelectItem>
           <SelectItem value="due_date">Due date</SelectItem>
           <SelectItem value="priority">Priority</SelectItem>
           <SelectItem value="created_at">Newest first</SelectItem>

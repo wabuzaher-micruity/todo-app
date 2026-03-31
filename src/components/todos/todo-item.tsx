@@ -7,11 +7,11 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { useToggleTodo, useDeleteTodo } from "@/hooks/use-todos";
+import { useToggleTodo, useDeleteTodo, useUpdateTodo } from "@/hooks/use-todos";
 import { DueDateIndicator } from "./due-date-indicator";
 import { TagBadge } from "@/components/tags/tag-badge";
 import { PRIORITY } from "@/lib/constants";
-import { GripVertical, MoreHorizontal, Pencil, Trash2 } from "lucide-react";
+import { GripVertical, Minus, MoreHorizontal, Pencil, Plus, Trash2 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import type { Todo, Tag } from "@/types";
 import type { SyntheticListenerMap } from "@dnd-kit/core/dist/hooks/utilities";
@@ -37,7 +37,9 @@ export function TodoItem({
 }: TodoItemProps) {
   const toggleTodo = useToggleTodo();
   const deleteTodo = useDeleteTodo();
+  const updateTodo = useUpdateTodo();
   const priority = PRIORITY[todo.priority as keyof typeof PRIORITY];
+  const count = todo.count ?? 1;
 
   return (
     <div className="group flex items-center gap-2 rounded-md border px-2 py-2 transition-colors hover:bg-accent/50">
@@ -81,6 +83,50 @@ export function TodoItem({
       </button>
 
       <div className="flex items-center gap-1.5 shrink-0">
+        {count > 1 && (
+          <div className="flex items-center gap-0.5">
+            {canEdit && (
+              <button
+                type="button"
+                className="size-5 inline-flex items-center justify-center rounded text-muted-foreground hover:bg-accent"
+                aria-label="Decrease count"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  if (count > 1) {
+                    updateTodo.mutate({
+                      id: todo.id,
+                      listId: todo.list_id,
+                      count: count - 1,
+                    });
+                  }
+                }}
+              >
+                <Minus className="size-3" />
+              </button>
+            )}
+            <Badge variant="secondary" className="text-xs px-1.5">
+              &times;{count}
+            </Badge>
+            {canEdit && (
+              <button
+                type="button"
+                className="size-5 inline-flex items-center justify-center rounded text-muted-foreground hover:bg-accent"
+                aria-label="Increase count"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  updateTodo.mutate({
+                    id: todo.id,
+                    listId: todo.list_id,
+                    count: count + 1,
+                  });
+                }}
+              >
+                <Plus className="size-3" />
+              </button>
+            )}
+          </div>
+        )}
+
         {tags && tags.length > 0 && (
           <div className="hidden sm:flex items-center gap-1">
             {tags.slice(0, 2).map((tag) => (

@@ -13,6 +13,7 @@ const baseTodo: Todo = {
   priority: "medium",
   due_date: null,
   position: 0,
+  count: 1,
   created_at: "2026-01-01T00:00:00Z",
   updated_at: "2026-01-01T00:00:00Z",
 };
@@ -81,5 +82,12 @@ describe("applySorting", () => {
     const result = applySorting(todos, "due_date");
     expect(result[0].due_date).toBe("2020-01-01");
     expect(result[result.length - 1].due_date).toBeNull();
+  });
+
+  it("sorts by status with completed todos last", () => {
+    const result = applySorting(todos, "status");
+    const completedIndex = result.findIndex((t) => t.completed);
+    const activeAfter = result.slice(completedIndex).some((t) => !t.completed);
+    expect(activeAfter).toBe(false);
   });
 });

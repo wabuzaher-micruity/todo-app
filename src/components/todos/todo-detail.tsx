@@ -22,7 +22,7 @@ import { DueDatePicker } from "./due-date-picker";
 import { SubtaskList } from "@/components/subtasks/subtask-list";
 import { TagPicker } from "@/components/tags/tag-picker";
 import { PRIORITY } from "@/lib/constants";
-import { Loader2, Trash2 } from "lucide-react";
+import { Loader2, Minus, Plus, Trash2 } from "lucide-react";
 import type { Todo } from "@/types";
 
 interface TodoDetailProps {
@@ -37,6 +37,7 @@ export function TodoDetail({ todo, open, onOpenChange, canEdit = true }: TodoDet
   const [description, setDescription] = useState("");
   const [priority, setPriority] = useState<string>("medium");
   const [dueDate, setDueDate] = useState<string | null>(null);
+  const [count, setCount] = useState(1);
   const updateTodo = useUpdateTodo();
   const deleteTodo = useDeleteTodo();
 
@@ -46,6 +47,7 @@ export function TodoDetail({ todo, open, onOpenChange, canEdit = true }: TodoDet
       setDescription(todo.description ?? "");
       setPriority(todo.priority);
       setDueDate(todo.due_date);
+      setCount(todo.count ?? 1);
     }
   }, [todo]);
 
@@ -60,6 +62,7 @@ export function TodoDetail({ todo, open, onOpenChange, canEdit = true }: TodoDet
       description: description.trim() || null,
       priority: priority as "low" | "medium" | "high",
       due_date: dueDate,
+      count,
     });
     onOpenChange(false);
   };
@@ -121,6 +124,41 @@ export function TodoDetail({ todo, open, onOpenChange, canEdit = true }: TodoDet
             <div className="space-y-1.5">
               <label className="text-sm font-medium">Due Date</label>
               <DueDatePicker value={dueDate} onChange={setDueDate} />
+            </div>
+          </div>
+
+          {/* Count */}
+          <div className="space-y-1.5">
+            <label className="text-sm font-medium">Count</label>
+            <div className="flex items-center gap-2">
+              <Button
+                type="button"
+                variant="outline"
+                size="icon-xs"
+                disabled={!canEdit || count <= 1}
+                onClick={() => setCount((c) => Math.max(1, c - 1))}
+                aria-label="Decrease count"
+              >
+                <Minus className="size-3" />
+              </Button>
+              <Input
+                type="number"
+                min={1}
+                value={count}
+                onChange={(e) => setCount(Math.max(1, parseInt(e.target.value) || 1))}
+                className="w-16 text-center"
+                readOnly={!canEdit}
+              />
+              <Button
+                type="button"
+                variant="outline"
+                size="icon-xs"
+                disabled={!canEdit}
+                onClick={() => setCount((c) => c + 1)}
+                aria-label="Increase count"
+              >
+                <Plus className="size-3" />
+              </Button>
             </div>
           </div>
 

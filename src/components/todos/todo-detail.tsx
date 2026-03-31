@@ -38,6 +38,7 @@ export function TodoDetail({ todo, open, onOpenChange, canEdit = true }: TodoDet
   const [priority, setPriority] = useState<string>("medium");
   const [dueDate, setDueDate] = useState<string | null>(null);
   const [count, setCount] = useState(1);
+  const MAX_COUNT = 999;
   const updateTodo = useUpdateTodo();
   const deleteTodo = useDeleteTodo();
 
@@ -144,8 +145,13 @@ export function TodoDetail({ todo, open, onOpenChange, canEdit = true }: TodoDet
               <Input
                 type="number"
                 min={1}
+                max={MAX_COUNT}
                 value={count}
-                onChange={(e) => setCount(Math.max(1, parseInt(e.target.value) || 1))}
+                onChange={(e) => {
+                  const parsed = parseInt(e.target.value);
+                  if (Number.isNaN(parsed)) return;
+                  setCount(Math.min(MAX_COUNT, Math.max(1, parsed)));
+                }}
                 className="w-16 text-center"
                 readOnly={!canEdit}
               />
@@ -153,8 +159,8 @@ export function TodoDetail({ todo, open, onOpenChange, canEdit = true }: TodoDet
                 type="button"
                 variant="outline"
                 size="icon-xs"
-                disabled={!canEdit}
-                onClick={() => setCount((c) => c + 1)}
+                disabled={!canEdit || count >= MAX_COUNT}
+                onClick={() => setCount((c) => Math.min(MAX_COUNT, c + 1))}
                 aria-label="Increase count"
               >
                 <Plus className="size-3" />

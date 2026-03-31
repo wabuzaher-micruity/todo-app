@@ -93,6 +93,33 @@ describe("TodoItem", () => {
     expect(screen.queryByText(/×/)).not.toBeInTheDocument();
   });
 
+  it("shows increase button when count is 1 and canEdit", () => {
+    render(<TodoItem todo={baseTodo} onEdit={vi.fn()} canEdit={true} />);
+    expect(screen.getByLabelText("Increase count")).toBeInTheDocument();
+    expect(screen.queryByLabelText("Decrease count")).not.toBeInTheDocument();
+  });
+
+  it("hides count controls when canEdit is false", () => {
+    const todo = { ...baseTodo, count: 3 };
+    render(<TodoItem todo={todo} onEdit={vi.fn()} canEdit={false} />);
+    expect(screen.getByText("×3")).toBeInTheDocument();
+    expect(screen.queryByLabelText("Increase count")).not.toBeInTheDocument();
+    expect(screen.queryByLabelText("Decrease count")).not.toBeInTheDocument();
+  });
+
+  it("increments count from 1 when + is clicked", async () => {
+    const user = userEvent.setup();
+    render(<TodoItem todo={baseTodo} onEdit={vi.fn()} />);
+
+    await user.click(screen.getByLabelText("Increase count"));
+
+    expect(mockUpdate).toHaveBeenCalledWith({
+      id: "todo-1",
+      listId: "list-1",
+      count: 2,
+    });
+  });
+
   it("increments count when + is clicked", async () => {
     const user = userEvent.setup();
     const todo = { ...baseTodo, count: 2 };

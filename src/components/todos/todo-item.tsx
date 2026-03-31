@@ -83,49 +83,47 @@ export function TodoItem({
       </button>
 
       <div className="flex items-center gap-1.5 shrink-0">
-        {count > 1 && (
-          <div className="flex items-center gap-0.5">
-            {canEdit && (
-              <button
-                type="button"
-                className="size-5 inline-flex items-center justify-center rounded text-muted-foreground hover:bg-accent"
-                aria-label="Decrease count"
-                onClick={(e) => {
-                  e.stopPropagation();
-                  if (count > 1) {
-                    updateTodo.mutate({
-                      id: todo.id,
-                      listId: todo.list_id,
-                      count: count - 1,
-                    });
-                  }
-                }}
-              >
-                <Minus className="size-3" />
-              </button>
-            )}
+        <div className="flex items-center gap-0.5">
+          {canEdit && count > 1 && (
+            <button
+              type="button"
+              className="size-5 inline-flex items-center justify-center rounded text-muted-foreground hover:bg-accent"
+              aria-label="Decrease count"
+              onClick={(e) => {
+                e.stopPropagation();
+                updateTodo.mutate({
+                  id: todo.id,
+                  listId: todo.list_id,
+                  count: count - 1,
+                });
+              }}
+            >
+              <Minus className="size-3" />
+            </button>
+          )}
+          {count > 1 && (
             <Badge variant="secondary" className="text-xs px-1.5">
               &times;{count}
             </Badge>
-            {canEdit && (
-              <button
-                type="button"
-                className="size-5 inline-flex items-center justify-center rounded text-muted-foreground hover:bg-accent"
-                aria-label="Increase count"
-                onClick={(e) => {
-                  e.stopPropagation();
-                  updateTodo.mutate({
-                    id: todo.id,
-                    listId: todo.list_id,
-                    count: count + 1,
-                  });
-                }}
-              >
-                <Plus className="size-3" />
-              </button>
-            )}
-          </div>
-        )}
+          )}
+          {canEdit && (
+            <button
+              type="button"
+              className="size-5 inline-flex items-center justify-center rounded text-muted-foreground hover:bg-accent"
+              aria-label="Increase count"
+              onClick={(e) => {
+                e.stopPropagation();
+                updateTodo.mutate({
+                  id: todo.id,
+                  listId: todo.list_id,
+                  count: count + 1,
+                });
+              }}
+            >
+              <Plus className="size-3" />
+            </button>
+          )}
+        </div>
 
         {tags && tags.length > 0 && (
           <div className="hidden sm:flex items-center gap-1">

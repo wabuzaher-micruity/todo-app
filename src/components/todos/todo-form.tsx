@@ -8,6 +8,8 @@ interface TodoFormProps {
   listId: string;
 }
 
+const MAX_SIMILAR_RESULTS = 5;
+
 export function findSimilarTodos(
   title: string,
   todos: { title: string; completed: boolean }[]
@@ -15,9 +17,14 @@ export function findSimilarTodos(
   const query = title.toLowerCase().trim();
   if (query.length < 3) return [];
 
-  return todos
-    .filter((t) => !t.completed && t.title.toLowerCase().includes(query))
-    .map((t) => t.title);
+  const results: string[] = [];
+  for (const t of todos) {
+    if (!t.completed && t.title.toLowerCase().includes(query)) {
+      results.push(t.title);
+      if (results.length >= MAX_SIMILAR_RESULTS) break;
+    }
+  }
+  return results;
 }
 
 export function TodoForm({ listId }: TodoFormProps) {
@@ -59,7 +66,6 @@ export function TodoForm({ listId }: TodoFormProps) {
           size="icon"
           disabled={createTodo.isPending || !title.trim()}
           aria-label="Add todo"
-          onClick={() => setTimeout(() => inputRef.current?.focus(), 0)}
         >
           <Plus className="size-4" />
         </Button>
@@ -72,7 +78,7 @@ export function TodoForm({ listId }: TodoFormProps) {
             {similarTitles.length <= 3 ? ": " : "."}
             {similarTitles.length <= 3 &&
               similarTitles.map((t, i) => (
-                <span key={t}>
+                <span key={i}>
                   {i > 0 && ", "}
                   <span className="font-medium">"{t}"</span>
                 </span>

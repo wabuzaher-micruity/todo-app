@@ -127,4 +127,13 @@ describe("findSimilarTodos", () => {
   it("matches substring anywhere in title", () => {
     expect(findSimilarTodos("milk", todos)).toEqual(["Buy milk"]);
   });
+
+  it("limits results to at most 5", () => {
+    const manyTodos = Array.from({ length: 20 }, (_, i) => ({
+      title: `Task ${i}`,
+      completed: false,
+    }));
+    const result = findSimilarTodos("Task", manyTodos);
+    expect(result).toHaveLength(5);
+  });
 });

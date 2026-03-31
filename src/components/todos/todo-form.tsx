@@ -2,6 +2,7 @@ import { useRef, useState, useMemo } from "react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { useCreateTodo, useTodos } from "@/hooks/use-todos";
+import { MAX_COUNT } from "@/lib/constants";
 import { Plus, AlertTriangle, ArrowRight } from "lucide-react";
 
 interface TodoFormProps {
@@ -9,14 +10,18 @@ interface TodoFormProps {
 }
 
 const MAX_SIMILAR_RESULTS = 5;
-const COUNT_PATTERN = /^(\d+)\s*x?\s+(.+)$/i;
+// Matches "4 shirts", "3x exercise", "2 x push-ups" but NOT leading zeros like "007 items"
+// or dimension patterns like "10 x 10 grid"
+const COUNT_PATTERN = /^([1-9]\d*)\s*x?\s+(.+)$/i;
 
 export function parseCountFromTitle(title: string): { count: number; title: string } | null {
   const match = title.trim().match(COUNT_PATTERN);
   if (!match) return null;
   const count = parseInt(match[1]);
   const parsedTitle = match[2].trim();
-  if (count < 2 || count > 999 || !parsedTitle) return null;
+  if (count < 2 || count > MAX_COUNT || !parsedTitle) return null;
+  // Reject dimension-like patterns where the remainder starts with a number (e.g. "10 x 10 grid")
+  if (/^\d/.test(parsedTitle)) return null;
   return { count, title: parsedTitle };
 }
 
@@ -54,19 +59,27 @@ export function TodoForm({ listId }: TodoFormProps) {
     e.preventDefault();
     if (!title.trim()) return;
 
-    await createTodo.mutateAsync({ list_id: listId, title: title.trim() });
-    setTitle("");
+    try {
+      await createTodo.mutateAsync({ list_id: listId, title: title.trim() });
+      setTitle("");
+    } catch {
+      // Error is already handled by the mutation's onError callback (toast)
+    }
     inputRef.current?.focus();
   };
 
   const handleAddWithCount = async () => {
     if (!parsedCount) return;
-    await createTodo.mutateAsync({
-      list_id: listId,
-      title: parsedCount.title,
-      count: parsedCount.count,
-    });
-    setTitle("");
+    try {
+      await createTodo.mutateAsync({
+        list_id: listId,
+        title: parsedCount.title,
+        count: parsedCount.count,
+      });
+      setTitle("");
+    } catch {
+      // Error is already handled by the mutation's onError callback (toast)
+    }
     inputRef.current?.focus();
   };
 

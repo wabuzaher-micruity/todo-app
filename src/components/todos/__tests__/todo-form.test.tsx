@@ -127,6 +127,31 @@ describe("TodoForm", () => {
     });
     expect(input).toHaveValue("");
   });
+
+  it("Enter creates todo with raw title even when count pattern matches", async () => {
+    const user = userEvent.setup();
+    render(<TodoForm listId="list-1" />);
+
+    const input = screen.getByPlaceholderText("Add a todo...");
+    await user.type(input, "4 shirts{Enter}");
+
+    expect(mockMutateAsync).toHaveBeenCalledWith({
+      list_id: "list-1",
+      title: "4 shirts",
+    });
+  });
+
+  it("does not clear input when mutateAsync rejects", async () => {
+    mockMutateAsync.mockRejectedValueOnce(new Error("Network error"));
+    const user = userEvent.setup();
+    render(<TodoForm listId="list-1" />);
+
+    const input = screen.getByPlaceholderText("Add a todo...");
+    await user.type(input, "3x exercise");
+    await user.click(screen.getByText(/with count/));
+
+    expect(input).toHaveValue("3x exercise");
+  });
 });
 
 describe("findSimilarTodos", () => {
@@ -180,8 +205,20 @@ describe("parseCountFromTitle", () => {
     expect(parseCountFromTitle("2 x push-ups")).toEqual({ count: 2, title: "push-ups" });
   });
 
+  it("parses '999 items' (max count)", () => {
+    expect(parseCountFromTitle("999 items")).toEqual({ count: 999, title: "items" });
+  });
+
+  it("trims leading/trailing whitespace", () => {
+    expect(parseCountFromTitle("  4 shirts  ")).toEqual({ count: 4, title: "shirts" });
+  });
+
   it("returns null for count of 1", () => {
     expect(parseCountFromTitle("1 thing")).toBeNull();
+  });
+
+  it("returns null for count of 0", () => {
+    expect(parseCountFromTitle("0 items")).toBeNull();
   });
 
   it("returns null for no number prefix", () => {
@@ -194,5 +231,33 @@ describe("parseCountFromTitle", () => {
 
   it("returns null for count > 999", () => {
     expect(parseCountFromTitle("1000 items")).toBeNull();
+  });
+
+  it("returns null for leading zeros like '007 items'", () => {
+    expect(parseCountFromTitle("007 items")).toBeNull();
+  });
+
+  it("returns null for leading zeros like '01 thing'", () => {
+    expect(parseCountFromTitle("01 thing")).toBeNull();
+  });
+
+  it("returns null for dimension pattern '10 x 10 grid'", () => {
+    expect(parseCountFromTitle("10 x 10 grid")).toBeNull();
+  });
+
+  it("returns null for dimension pattern '10x10 grid'", () => {
+    expect(parseCountFromTitle("10x10 grid")).toBeNull();
+  });
+
+  it("returns null for number in middle of text", () => {
+    expect(parseCountFromTitle("buy 4 shirts")).toBeNull();
+  });
+
+  it("returns null for empty string", () => {
+    expect(parseCountFromTitle("")).toBeNull();
+  });
+
+  it("returns null for whitespace only", () => {
+    expect(parseCountFromTitle("   ")).toBeNull();
   });
 });

@@ -6,7 +6,7 @@ import type { Todo } from "@/types";
 export type StatusFilter = "all" | "active" | "completed";
 export type PriorityFilter = "all" | "low" | "medium" | "high";
 export type DueFilter = "all" | "overdue" | "today" | "this-week" | "no-date";
-export type SortField = "position" | "due_date" | "priority" | "created_at" | "title";
+export type SortField = "position" | "due_date" | "priority" | "created_at" | "title" | "status";
 
 const PRIORITY_ORDER = { high: 0, medium: 1, low: 2 };
 
@@ -77,6 +77,10 @@ export function applySorting(todos: Todo[], sort: SortField): Todo[] {
 
   return [...todos].sort((a, b) => {
     switch (sort) {
+      case "status": {
+        if (a.completed === b.completed) return 0;
+        return a.completed ? 1 : -1;
+      }
       case "due_date": {
         if (!a.due_date && !b.due_date) return 0;
         if (!a.due_date) return 1;

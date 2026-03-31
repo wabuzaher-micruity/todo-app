@@ -6,10 +6,12 @@ import type { Todo } from "@/types";
 
 const mockToggle = vi.fn();
 const mockDelete = vi.fn();
+const mockUpdate = vi.fn();
 
 vi.mock("@/hooks/use-todos", () => ({
   useToggleTodo: () => ({ mutate: mockToggle }),
   useDeleteTodo: () => ({ mutate: mockDelete }),
+  useUpdateTodo: () => ({ mutate: mockUpdate }),
 }));
 
 const baseTodo: Todo = {
@@ -23,6 +25,7 @@ const baseTodo: Todo = {
   priority: "medium",
   due_date: null,
   position: 0,
+  count: 1,
   created_at: "2026-01-01T00:00:00Z",
   updated_at: "2026-01-01T00:00:00Z",
 };
@@ -77,5 +80,71 @@ describe("TodoItem", () => {
   it("does not show priority badge for medium priority", () => {
     render(<TodoItem todo={baseTodo} onEdit={vi.fn()} />);
     expect(screen.queryByText("Medium")).not.toBeInTheDocument();
+  });
+
+  it("shows count badge when count > 1", () => {
+    const todo = { ...baseTodo, count: 3 };
+    render(<TodoItem todo={todo} onEdit={vi.fn()} />);
+    expect(screen.getByText("×3")).toBeInTheDocument();
+  });
+
+  it("does not show count badge when count is 1", () => {
+    render(<TodoItem todo={baseTodo} onEdit={vi.fn()} />);
+    expect(screen.queryByText(/×/)).not.toBeInTheDocument();
+  });
+
+  it("shows increase button when count is 1 and canEdit", () => {
+    render(<TodoItem todo={baseTodo} onEdit={vi.fn()} canEdit={true} />);
+    expect(screen.getByLabelText("Increase count")).toBeInTheDocument();
+    expect(screen.queryByLabelText("Decrease count")).not.toBeInTheDocument();
+  });
+
+  it("hides count controls when canEdit is false", () => {
+    const todo = { ...baseTodo, count: 3 };
+    render(<TodoItem todo={todo} onEdit={vi.fn()} canEdit={false} />);
+    expect(screen.getByText("×3")).toBeInTheDocument();
+    expect(screen.queryByLabelText("Increase count")).not.toBeInTheDocument();
+    expect(screen.queryByLabelText("Decrease count")).not.toBeInTheDocument();
+  });
+
+  it("increments count from 1 when + is clicked", async () => {
+    const user = userEvent.setup();
+    render(<TodoItem todo={baseTodo} onEdit={vi.fn()} />);
+
+    await user.click(screen.getByLabelText("Increase count"));
+
+    expect(mockUpdate).toHaveBeenCalledWith({
+      id: "todo-1",
+      listId: "list-1",
+      count: 2,
+    });
+  });
+
+  it("increments count when + is clicked", async () => {
+    const user = userEvent.setup();
+    const todo = { ...baseTodo, count: 2 };
+    render(<TodoItem todo={todo} onEdit={vi.fn()} />);
+
+    await user.click(screen.getByLabelText("Increase count"));
+
+    expect(mockUpdate).toHaveBeenCalledWith({
+      id: "todo-1",
+      listId: "list-1",
+      count: 3,
+    });
+  });
+
+  it("decrements count when - is clicked", async () => {
+    const user = userEvent.setup();
+    const todo = { ...baseTodo, count: 3 };
+    render(<TodoItem todo={todo} onEdit={vi.fn()} />);
+
+    await user.click(screen.getByLabelText("Decrease count"));
+
+    expect(mockUpdate).toHaveBeenCalledWith({
+      id: "todo-1",
+      listId: "list-1",
+      count: 2,
+    });
   });
 });

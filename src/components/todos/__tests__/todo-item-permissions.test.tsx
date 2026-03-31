@@ -24,6 +24,7 @@ const baseTodo: Todo = {
   priority: "medium",
   due_date: null,
   position: 0,
+  count: 1,
   fts: null,
   created_at: "2026-01-01T00:00:00Z",
   updated_at: "2026-01-01T00:00:00Z",
